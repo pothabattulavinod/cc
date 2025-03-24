@@ -5,19 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebRTC Video Chat</title>
     <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        video { width: 45%; margin: 10px; border: 2px solid black; }
+        input, button { margin: 5px; padding: 10px; font-size: 16px; }
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
 
     <h2>Simple WebRTC Video Chat</h2>
     
-    <video id="localVideo" autoplay playsinline></video>
+    <h3>Your Peer ID: <span id="peerId">Generating...</span>  
+        <button onclick="copyPeerId()">📋 Copy</button>
+    </h3>
+
+    <button onclick="hostCall()">Start a Call</button>
+    <button onclick="joinCall()">Join a Call</button>
+
+    <div id="callInput" class="hidden">
+        <input type="text" id="callId" placeholder="Enter Peer ID to Join">
+        <button onclick="connectToPeer()">Join Now</button>
+    </div>
+
+    <br>
+
+    <video id="localVideo" autoplay playsinline muted></video>
     <video id="remoteVideo" autoplay playsinline></video>
-    
-    <input type="text" id="callId" placeholder="Enter Peer ID to Call">
-    <button onclick="callUser()">Call</button>
-    
+
     <script>
-        const peer = new Peer(); // Create a new PeerJS instance
+        const peer = new Peer(); // Create PeerJS instance
         let localStream;
 
         // Get user media (Camera & Microphone)
@@ -26,21 +43,36 @@
             localStream = stream;
         });
 
-        // Display your Peer ID
+        // Display Peer ID
         peer.on("open", id => {
-            alert("Your ID: " + id);
+            document.getElementById("peerId").innerText = id;
         });
 
-        // Receive calls
-        peer.on("call", call => {
-            call.answer(localStream); // Answer the call with local stream
-            call.on("stream", remoteStream => {
-                document.getElementById("remoteVideo").srcObject = remoteStream;
+        // Copy Peer ID to clipboard
+        function copyPeerId() {
+            const peerId = document.getElementById("peerId").innerText;
+            navigator.clipboard.writeText(peerId);
+            alert("Peer ID copied: " + peerId);
+        }
+
+        // Show join input when "Join a Call" is clicked
+        function joinCall() {
+            document.getElementById("callInput").classList.remove("hidden");
+        }
+
+        // Start a call (Host)
+        function hostCall() {
+            peer.on("call", call => {
+                call.answer(localStream); // Answer the call with local stream
+                call.on("stream", remoteStream => {
+                    document.getElementById("remoteVideo").srcObject = remoteStream;
+                });
             });
-        });
+            alert("Share your Peer ID for others to join!");
+        }
 
-        // Call another user
-        function callUser() {
+        // Connect to another peer (Join)
+        function connectToPeer() {
             const callId = document.getElementById("callId").value;
             const call = peer.call(callId, localStream);
             call.on("stream", remoteStream => {
