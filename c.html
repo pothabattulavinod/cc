@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Video Chat</title>
+    <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+    <h2>Simple WebRTC Video Chat</h2>
+    
+    <video id="localVideo" autoplay playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+    
+    <input type="text" id="callId" placeholder="Enter Peer ID to Call">
+    <button onclick="callUser()">Call</button>
+    
+    <script>
+        const peer = new Peer(); // Create a new PeerJS instance
+        let localStream;
+
+        // Get user media (Camera & Microphone)
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+            document.getElementById("localVideo").srcObject = stream;
+            localStream = stream;
+        });
+
+        // Display your Peer ID
+        peer.on("open", id => {
+            alert("Your ID: " + id);
+        });
+
+        // Receive calls
+        peer.on("call", call => {
+            call.answer(localStream); // Answer the call with local stream
+            call.on("stream", remoteStream => {
+                document.getElementById("remoteVideo").srcObject = remoteStream;
+            });
+        });
+
+        // Call another user
+        function callUser() {
+            const callId = document.getElementById("callId").value;
+            const call = peer.call(callId, localStream);
+            call.on("stream", remoteStream => {
+                document.getElementById("remoteVideo").srcObject = remoteStream;
+            });
+        }
+    </script>
+
+</body>
+</html>
