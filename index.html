@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Responsive Video Stream</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>Qodegen TV</title>
     <style>
         body {
             background-color: #000;
@@ -33,6 +32,7 @@
             width: 100%;
             height: auto;
             background-color: #000;
+            pointer-events: none;
         }
 
         #info-bar {
@@ -76,13 +76,31 @@
         #video-container.fullscreen {
             border: none;
         }
+
+        /* Watermark styling */
+        #watermark {
+            position: absolute;
+            left: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 10px;
+            display: none;
+            z-index: 10;
+        }
     </style>
+
+    <!-- Add HLS.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
-    <h1>Qodegen Media</h1>
+    <h1>Qodegen TV</h1>
     <div id="video-container">
-        <video id="video" autoplay></video>
+        <video id="video" autoplay playsinline></video>
         <div id="loading-indicator">Loading...</div>
+        <div id="watermark">QODEGEN TV</div>
     </div>
     <div id="info-bar">Now Playing: -</div>
     <div id="button-container">
@@ -96,47 +114,49 @@
         const refreshBtn = document.getElementById('refresh-btn');
         const infoBar = document.getElementById('info-bar');
         const videoContainer = document.getElementById('video-container');
+        const watermark = document.getElementById('watermark');
+        const loadingIndicator = document.getElementById('loading-indicator');
 
         const streams = [
             {
-                url:  'https://pothabattulavinod.github.io/m/gc.m3u8',
+                url: 'https://video-cf.xhpingcdn.com/QPHcAY4aN7L82IcUESLrqAFWwRRqDyi6%2FeZeIoN4K%2FY%3D/104/1744016400/media=hls4/multi=256x144:144p:,426x240:240p:,854x480:480p:,1280x720:720p:,1920x1080:1080p:/025/942/940/480p.av1.mp4.m3u8',
                 title: 'DASARA',
-                startTime: new Date().setHours(8, 35, 0, 0),
-                endTime: new Date().setHours(11, 29, 0, 0)
+                startTime: new Date().setHours(11, 20, 0, 0),
+                endTime: new Date().setHours(11, 39, 0, 0)
             },
             {
-                url: '",
+                url: 'https://example.com/lucky_bhaskar.m3u8',
                 title: 'LUCKY BHASKAR',
-                startTime: new Date().setHours(14, 02, 0, 0),
-                endTime: new Date().setHours(16, 00, 0, 0)
+                startTime: new Date().setHours(13, 25, 0, 0),
+                endTime: new Date().setHours(16, 0, 0, 0)
             },
             {
-                url: 'https://pothabattulavinod.github.io/m/devera.m3u8',
+                url: 'https://example.com/devara_part1.m3u8',
                 title: 'DEVARA: PART 1',
-                startTime: new Date().setHours(16, 00, 0, 0),
+                startTime: new Date().setHours(16, 0, 0, 0),
                 endTime: new Date().setHours(17, 0, 0, 0)
             },
             {
-                url: 'https://example.com/evening-show.m3u8',
+                url: 'https://pothabattulavinod.github.io/m/lucky.m3u8',
                 title: '5PM to 8PM Show',
                 startTime: new Date().setHours(17, 0, 0, 0),
                 endTime: new Date().setHours(20, 0, 0, 0)
             },
             {
-                url: 'https://pothabattulavinod.github.io/m/amaran.m3u8',
+                url: 'https://example.com/night_show.m3u8',
                 title: '8PM to 11PM Show',
-                startTime: new Date().setHours(22, 55, 0, 0),
-                endTime: new Date().setHours(23, 59, 0, 0)
+                startTime: new Date().setHours(20, 0, 0, 0),
+                endTime: new Date().setHours(23, 0, 0, 0)
             }
         ];
         let currentStreamIndex = 0;
 
         function showLoading() {
-            document.getElementById('loading-indicator').style.display = 'block';
+            loadingIndicator.style.display = 'block';
         }
 
         function hideLoading() {
-            document.getElementById('loading-indicator').style.display = 'none';
+            loadingIndicator.style.display = 'none';
         }
 
         function loadStream(offsetSeconds = 0) {
@@ -146,13 +166,19 @@
                 const hls = new Hls();
                 hls.loadSource(stream.url);
                 hls.attachMedia(video);
-
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
                     video.currentTime = offsetSeconds;
-                    video.muted = false;
                     video.play();
+                    infoBar.textContent = `Now Playing: ${stream.title}`;
                     hideLoading();
                 });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = stream.url;
+                video.currentTime = offsetSeconds;
+                video.load();
+                video.play();
+                infoBar.textContent = `Now Playing: ${stream.title}`;
+                hideLoading();
             }
         }
 
@@ -174,13 +200,14 @@
             if (currentStreamIndex < streams.length - 1) {
                 currentStreamIndex++;
                 syncWithTime();
+            } else {
+                infoBar.textContent = 'No more streams available.';
             }
         }
 
         function updateInfoBarRandomly() {
-            const now = new Date();
             const currentStream = streams[currentStreamIndex];
-            const nextStream = streams[currentStreamIndex + 1];
+            const nextStream = streams[currentStreamIndex + 1] || streams[0];
 
             const currentText = `Now Playing: ${currentStream?.title || 'No Current Movie'}`;
             const nextText = `Next: ${nextStream?.title || 'No Upcoming Movies'} at ${
@@ -207,6 +234,7 @@
                     });
                 }
                 videoContainer.classList.add('fullscreen');
+                watermark.style.display = 'block';
                 fullscreenBtn.style.display = 'none';
             });
         }
@@ -216,13 +244,17 @@
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement) {
                 videoContainer.classList.remove('fullscreen');
+                watermark.style.display = 'none';
                 fullscreenBtn.style.display = 'inline-block';
             }
         });
 
-        refreshBtn.addEventListener('click', syncWithTime);
+        refreshBtn.addEventListener('click', () => {
+            syncWithTime();
+        });
 
         window.addEventListener('load', () => {
+            video.muted = false; // Unmute the video on load
             syncWithTime();
             updateInfoBarRandomly();
         });
